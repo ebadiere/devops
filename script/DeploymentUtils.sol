@@ -48,8 +48,10 @@ abstract contract DeploymentUtils is Script {
             revert(string.concat("Deployment not allowed on ", network));
         }
 
+        // Start broadcast session for all transactions
+        vm.startBroadcast();
+
         // Deploy implementation
-        vm.broadcast();
         MultiSigWallet implementation = new MultiSigWallet();
         
         // No need to initialize implementation - it will be initialized through the proxy
@@ -73,6 +75,7 @@ abstract contract DeploymentUtils is Script {
         }
         require(proxy != address(0), "Proxy deployment failed");
 
+        // End broadcast session
         vm.stopBroadcast();
 
         // Log deployment

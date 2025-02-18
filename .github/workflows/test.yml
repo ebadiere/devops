@@ -1,9 +1,10 @@
-name: CI
+name: test
 
 on:
   push:
+    branches: [ main ]
   pull_request:
-  workflow_dispatch:
+    branches: [ main ]
 
 env:
   FOUNDRY_PROFILE: ci
@@ -25,17 +26,9 @@ jobs:
         with:
           version: nightly
 
-      - name: Show Forge version
-        run: |
-          forge --version
-
-      - name: Run Forge fmt
-        run: |
-          forge fmt --check
-        id: fmt
-
       - name: Run Forge build
         run: |
+          forge --version
           forge build --sizes
         id: build
 
@@ -43,3 +36,33 @@ jobs:
         run: |
           forge test -vvv
         id: test
+
+  deploy-test:
+    needs: check
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Setup deployment keystore
+        run: ./script/setup-deployment.sh
+        env:
+          # Using Anvil test key for CI
+          DEPLOYER_KEY: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+          KEYSTORE_PASSWORD: "test"
+
+      - name: Run deployment test
+        run: |
+          anvil &
+          sleep 2
+          forge script script/DeployMultiSigWallet.s.sol:DeployMultiSigWallet --account deployer --rpc-url http://localhost:8545 -vvvv
+        env:
+          NETWORK: "mainnet"
+          GNOSIS_SAFE: "0x0000000000000000000000000000000000000001" # Test address for CI

@@ -17,7 +17,6 @@ abstract contract DeploymentUtils is Script {
     // Environment variables
     string public network;
     address public gnosisSafe;
-    uint256 public deployerPrivateKey;
     bool public isTestMode;
     
     // Deployment constants
@@ -48,7 +47,7 @@ abstract contract DeploymentUtils is Script {
         }
 
         // Deploy implementation
-        vm.broadcast(deployerPrivateKey);
+        vm.broadcast();
         MultiSigWallet implementation = new MultiSigWallet();
         
         // Initialize implementation (this disables the implementation contract)

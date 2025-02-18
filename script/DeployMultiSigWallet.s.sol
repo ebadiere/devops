@@ -16,9 +16,6 @@ contract DeployMultiSigWallet is Script, DeploymentUtils {
     }
 
     function loadConfig() internal returns (DeploymentConfig memory) {
-        // Get deployment private key from environment
-        deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
-
         // Get Gnosis Safe address from environment or use mock for testing
         if (!isTestMode) {
             gnosisSafe = vm.envAddress("GNOSIS_SAFE");

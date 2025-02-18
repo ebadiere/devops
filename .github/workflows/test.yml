@@ -65,4 +65,3 @@ jobs:
           forge script script/DeployMultiSigWallet.s.sol:DeployMultiSigWallet --account deployer --rpc-url http://localhost:8545 -vvvv
         env:
           NETWORK: "mainnet"
-          GNOSIS_SAFE: "0x0000000000000000000000000000000000000001" # Test address for CI

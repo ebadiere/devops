@@ -5,6 +5,7 @@ import { Script } from "forge-std/Script.sol";
 import { MultiSigWallet } from "../src/MultiSigWallet.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { DeploymentUtils } from "./DeploymentUtils.sol";
+import { MockGnosisSafe } from "../test/mocks/MockGnosisSafe.sol";
 
 contract DeployMultiSigWallet is Script, DeploymentUtils {
     function run() external returns (address) {
@@ -16,10 +17,14 @@ contract DeployMultiSigWallet is Script, DeploymentUtils {
     }
 
     function loadConfig() internal returns (DeploymentConfig memory) {
-        // Get Gnosis Safe address from environment or use mock for testing
+        // Get Gnosis Safe address from environment or deploy mock for testing
         if (!isTestMode) {
             gnosisSafe = vm.envAddress("GNOSIS_SAFE");
             require(gnosisSafe != address(0), "Gnosis Safe address required");
+        } else {
+            // Deploy mock Gnosis Safe for testing
+            MockGnosisSafe mockSafe = new MockGnosisSafe();
+            gnosisSafe = address(mockSafe);
         }
 
         // Load owners from environment or use defaults for testing

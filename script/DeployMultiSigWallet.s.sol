@@ -9,7 +9,7 @@ contract DeployMultiSigWallet is Script {
     function run() external returns (address) {
         // Get deployment private key from environment
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        
+
         // Configuration
         address[] memory owners = new address[](3);
         owners[0] = vm.addr(vm.envUint("OWNER1_KEY"));
@@ -21,22 +21,15 @@ contract DeployMultiSigWallet is Script {
 
         // Deploy implementation
         MultiSigWallet implementation = new MultiSigWallet();
-        
+
         // Prepare initialization data
-        bytes memory initData = abi.encodeWithSelector(
-            MultiSigWallet.initialize.selector,
-            owners,
-            required
-        );
-        
+        bytes memory initData = abi.encodeWithSelector(MultiSigWallet.initialize.selector, owners, required);
+
         // Deploy proxy
-        ERC1967Proxy proxy = new ERC1967Proxy(
-            address(implementation),
-            initData
-        );
-        
+        ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), initData);
+
         vm.stopBroadcast();
-        
+
         return address(proxy);
     }
 }

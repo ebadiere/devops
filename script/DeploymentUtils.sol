@@ -52,8 +52,7 @@ abstract contract DeploymentUtils is Script {
         vm.broadcast();
         MultiSigWallet implementation = new MultiSigWallet();
         
-        // Initialize implementation (this disables the implementation contract)
-        implementation.initialize(new address[](0), 1);
+        // No need to initialize implementation - it will be initialized through the proxy
 
         // Prepare initialization data for proxy
         bytes memory initData = abi.encodeWithSelector(

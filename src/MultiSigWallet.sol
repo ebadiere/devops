@@ -16,6 +16,7 @@ contract MultiSigWallet is
 {
     bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
+    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
     uint256 public required;
     uint256 public transactionCount;
@@ -52,8 +53,10 @@ contract MultiSigWallet is
 
         for (uint256 i = 0; i < _owners.length; i++) {
             require(_owners[i] != address(0), "Invalid owner");
+            _grantRole(DEFAULT_ADMIN_ROLE, _owners[i]);
             _grantRole(OWNER_ROLE, _owners[i]);
             _grantRole(UPGRADER_ROLE, _owners[i]);
+            _grantRole(PAUSER_ROLE, _owners[i]);
         }
 
         required = _required;
@@ -110,15 +113,17 @@ contract MultiSigWallet is
         }
     }
 
-    function pause() public onlyRole(OWNER_ROLE) {
+    function pause() public onlyRole(PAUSER_ROLE) {
         _pause();
     }
 
-    function unpause() public onlyRole(OWNER_ROLE) {
+    function unpause() public onlyRole(PAUSER_ROLE) {
         _unpause();
     }
 
-    function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) { }
+    function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {
+        require(paused(), "Contract must be paused before upgrade");
+    }
 
     receive() external payable { }
 }

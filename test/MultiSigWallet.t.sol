@@ -214,4 +214,79 @@ contract MultiSigWalletTest is Test {
         vm.expectRevert();
         wallet.executeTransaction(txId);
     }
+
+    function testPauserRole() public {
+        assertTrue(wallet.hasRole(wallet.PAUSER_ROLE(), owner1));
+        assertTrue(wallet.hasRole(wallet.PAUSER_ROLE(), owner2));
+        assertTrue(wallet.hasRole(wallet.PAUSER_ROLE(), owner3));
+    }
+
+    function test_RevertWhen_NonPauserTriesToPause() public {
+        // Setup owner2 to revoke owner1's role
+        vm.startPrank(owner2);
+        wallet.revokeRole(wallet.PAUSER_ROLE(), owner1);
+        vm.stopPrank();
+
+        // Try to pause without role
+        vm.startPrank(owner1);
+        vm.expectRevert(
+            abi.encodeWithSignature(
+                "AccessControlUnauthorizedAccount(address,bytes32)",
+                owner1,
+                wallet.PAUSER_ROLE()
+            )
+        );
+        wallet.pause();
+        vm.stopPrank();
+    }
+
+    function test_RevertWhen_UpgradingWithoutPause() public {
+        address newImplementation = address(new MultiSigWallet());
+        vm.startPrank(owner1);
+        vm.expectRevert("Contract must be paused before upgrade");
+        wallet.upgradeToAndCall(newImplementation, "");
+        vm.stopPrank();
+    }
+
+    function testUpgradeWithPause() public {
+        address newImplementation = address(new MultiSigWallet());
+        
+        vm.startPrank(owner1);
+        // First pause
+        wallet.pause();
+        assertTrue(wallet.paused());
+        
+        // Then upgrade
+        wallet.upgradeToAndCall(newImplementation, "");
+        
+        // Check implementation slot
+        bytes32 implementationSlot = bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1);
+        assertEq(address(uint160(uint256(vm.load(address(wallet), implementationSlot)))), newImplementation);
+        
+        vm.stopPrank();
+    }
+
+    function test_RevertWhen_NonUpgraderTriesToUpgrade() public {
+        address newImplementation = address(new MultiSigWallet());
+        
+        // Setup owner2 to revoke owner1's role
+        vm.startPrank(owner2);
+        wallet.revokeRole(wallet.UPGRADER_ROLE(), owner1);
+        vm.stopPrank();
+        
+        vm.startPrank(owner1);
+        // First pause (owner1 still has PAUSER_ROLE)
+        wallet.pause();
+        
+        // Try to upgrade without role
+        vm.expectRevert(
+            abi.encodeWithSignature(
+                "AccessControlUnauthorizedAccount(address,bytes32)",
+                owner1,
+                wallet.UPGRADER_ROLE()
+            )
+        );
+        wallet.upgradeToAndCall(newImplementation, "");
+        vm.stopPrank();
+    }
 }

@@ -27,7 +27,8 @@ abstract contract DeploymentUtils is Script {
         // Load environment variables or use defaults for testing
         try vm.envString("NETWORK") returns (string memory net) {
             network = net;
-            isTestMode = false;
+            // Set test mode if network is "test"
+            isTestMode = keccak256(bytes(network)) == keccak256("test");
         } catch {
             network = "mainnet"; // Default for tests
             isTestMode = true;
@@ -35,6 +36,7 @@ abstract contract DeploymentUtils is Script {
     }
     
     function isAllowedNetwork() internal view returns (bool) {
+        if (isTestMode) return true;
         bytes32 networkHash = keccak256(bytes(network));
         return networkHash == keccak256("mainnet") || 
                networkHash == keccak256("goerli");

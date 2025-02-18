@@ -120,24 +120,27 @@ contract MultiSigWalletTest is Test {
         assertEq(to.balance - initialBalance, value);
     }
 
-    function testFailNonOwnerSubmit() public {
+    function test_RevertWhen_NonOwnerSubmits() public {
         vm.prank(nonOwner);
+        vm.expectRevert();
         wallet.submitTransaction(address(0x123), 1 ether, "");
     }
 
-    function testFailDoubleConfirmation() public {
+    function test_RevertWhen_DoubleConfirmation() public {
         vm.startPrank(owner1);
         uint256 txId = wallet.submitTransaction(address(0x123), 1 ether, "");
         wallet.confirmTransaction(txId);
-        wallet.confirmTransaction(txId); // Should fail
+        vm.expectRevert();
+        wallet.confirmTransaction(txId);
         vm.stopPrank();
     }
 
-    function testFailExecuteWithoutEnoughConfirmations() public {
+    function test_RevertWhen_ExecutingWithoutEnoughConfirmations() public {
         vm.startPrank(owner1);
         uint256 txId = wallet.submitTransaction(address(0x123), 1 ether, "");
         wallet.confirmTransaction(txId);
-        wallet.executeTransaction(txId); // Should fail - only 1 confirmation
+        vm.expectRevert();
+        wallet.executeTransaction(txId);
         vm.stopPrank();
     }
 
@@ -157,22 +160,24 @@ contract MultiSigWalletTest is Test {
         vm.stopPrank();
     }
 
-    function testFailNonOwnerPause() public {
+    function test_RevertWhen_NonOwnerPause() public {
         vm.prank(nonOwner);
+        vm.expectRevert();
         wallet.pause();
     }
 
-    function testFailSubmitWhilePaused() public {
+    function test_RevertWhen_SubmittingWhilePaused() public {
         // First pause the contract
         vm.prank(owner1);
         wallet.pause();
 
         // Try to submit a transaction while paused
         vm.prank(owner2);
+        vm.expectRevert();
         wallet.submitTransaction(address(0x123), 1 ether, "");
     }
 
-    function testFailConfirmWhilePaused() public {
+    function test_RevertWhen_ConfirmingWhilePaused() public {
         // Submit a transaction
         vm.prank(owner1);
         uint256 txId = wallet.submitTransaction(address(0x123), 1 ether, "");
@@ -183,10 +188,11 @@ contract MultiSigWalletTest is Test {
 
         // Try to confirm while paused
         vm.prank(owner2);
+        vm.expectRevert();
         wallet.confirmTransaction(txId);
     }
 
-    function testFailExecuteWhilePaused() public {
+    function test_RevertWhen_ExecutingWhilePaused() public {
         // Fund the wallet
         vm.deal(address(wallet), 2 ether);
 
@@ -205,6 +211,7 @@ contract MultiSigWalletTest is Test {
 
         // Try to execute while paused
         vm.prank(owner1);
+        vm.expectRevert();
         wallet.executeTransaction(txId);
     }
 }

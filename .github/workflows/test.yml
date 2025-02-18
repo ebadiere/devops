@@ -51,20 +51,12 @@ jobs:
         with:
           version: nightly
 
-      - name: Make setup script executable
-        run: chmod +x ./script/setup-deployment.sh
-
-      - name: Setup deployment keystore
-        run: ./script/setup-deployment.sh
-        env:
-          # Using Anvil test key for CI
-          DEPLOYER_KEY: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
-          KEYSTORE_PASSWORD: "test"
-
       - name: Run deployment test
         run: |
           anvil &
           sleep 2
-          forge script script/DeployMultiSigWallet.s.sol:DeployMultiSigWallet --account deployer --rpc-url http://localhost:8545 -vvvv
+          forge script script/DeployMultiSigWallet.s.sol:DeployMultiSigWallet \
+            --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
+            --rpc-url http://localhost:8545 -vvvv
         env:
           NETWORK: "mainnet"

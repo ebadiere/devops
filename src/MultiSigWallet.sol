@@ -59,7 +59,11 @@ contract MultiSigWallet is
         required = _required;
     }
 
-    function submitTransaction(address _to, uint256 _value, bytes memory _data)
+    function submitTransaction(
+        address _to,
+        uint256 _value,
+        bytes memory _data
+    )
         public
         whenNotPaused
         onlyRole(OWNER_ROLE)
@@ -69,7 +73,7 @@ contract MultiSigWallet is
 
         transactionId = transactionCount;
         transactions[transactionId] =
-            Transaction({to: _to, value: _value, data: _data, executed: false, confirmations: 0});
+            Transaction({ to: _to, value: _value, data: _data, executed: false, confirmations: 0 });
 
         transactionCount += 1;
         emit Submission(transactionId);
@@ -96,7 +100,7 @@ contract MultiSigWallet is
 
         transaction.executed = true;
 
-        (bool success,) = transaction.to.call{value: transaction.value}(transaction.data);
+        (bool success,) = transaction.to.call{ value: transaction.value }(transaction.data);
 
         if (success) {
             emit Execution(_transactionId);
@@ -114,7 +118,7 @@ contract MultiSigWallet is
         _unpause();
     }
 
-    function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) { }
 
-    receive() external payable {}
+    receive() external payable { }
 }

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {Test, console2} from "forge-std/Test.sol";
-import {MultiSigWallet} from "../src/MultiSigWallet.sol";
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { Test, console2 } from "forge-std/Test.sol";
+import { MultiSigWallet } from "../src/MultiSigWallet.sol";
+import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract MultiSigWalletTest is Test {
     MultiSigWallet public implementation;
@@ -120,24 +120,24 @@ contract MultiSigWalletTest is Test {
         assertEq(to.balance - initialBalance, value);
     }
 
-    function test_RevertWhen_NonOwnerSubmits() public {
+    function testFailNonOwnerSubmit() public {
         vm.prank(nonOwner);
         wallet.submitTransaction(address(0x123), 1 ether, "");
     }
 
-    function test_RevertWhen_DoubleConfirmation() public {
+    function testFailDoubleConfirmation() public {
         vm.startPrank(owner1);
         uint256 txId = wallet.submitTransaction(address(0x123), 1 ether, "");
         wallet.confirmTransaction(txId);
-        wallet.confirmTransaction(txId); // Should revert
+        wallet.confirmTransaction(txId); // Should fail
         vm.stopPrank();
     }
 
-    function test_RevertWhen_ExecutingWithoutEnoughConfirmations() public {
+    function testFailExecuteWithoutEnoughConfirmations() public {
         vm.startPrank(owner1);
         uint256 txId = wallet.submitTransaction(address(0x123), 1 ether, "");
         wallet.confirmTransaction(txId);
-        wallet.executeTransaction(txId); // Should revert - only 1 confirmation
+        wallet.executeTransaction(txId); // Should fail - only 1 confirmation
         vm.stopPrank();
     }
 
@@ -157,52 +157,52 @@ contract MultiSigWalletTest is Test {
         vm.stopPrank();
     }
 
-    function test_RevertWhen_NonOwnerPause() public {
+    function testFailNonOwnerPause() public {
         vm.prank(nonOwner);
         wallet.pause();
     }
 
-    function test_RevertWhen_SubmittingWhilePaused() public {
+    function testFailSubmitWhilePaused() public {
         // First pause the contract
         vm.prank(owner1);
         wallet.pause();
-        
+
         // Try to submit a transaction while paused
         vm.prank(owner2);
         wallet.submitTransaction(address(0x123), 1 ether, "");
     }
 
-    function test_RevertWhen_ConfirmingWhilePaused() public {
+    function testFailConfirmWhilePaused() public {
         // Submit a transaction
         vm.prank(owner1);
         uint256 txId = wallet.submitTransaction(address(0x123), 1 ether, "");
-        
+
         // Pause the contract
         vm.prank(owner1);
         wallet.pause();
-        
+
         // Try to confirm while paused
         vm.prank(owner2);
         wallet.confirmTransaction(txId);
     }
 
-    function test_RevertWhen_ExecutingWhilePaused() public {
+    function testFailExecuteWhilePaused() public {
         // Fund the wallet
         vm.deal(address(wallet), 2 ether);
-        
+
         // Submit and confirm a transaction
         vm.prank(owner1);
         uint256 txId = wallet.submitTransaction(address(0x123), 1 ether, "");
-        
+
         vm.prank(owner1);
         wallet.confirmTransaction(txId);
         vm.prank(owner2);
         wallet.confirmTransaction(txId);
-        
+
         // Pause the contract
         vm.prank(owner1);
         wallet.pause();
-        
+
         // Try to execute while paused
         vm.prank(owner1);
         wallet.executeTransaction(txId);

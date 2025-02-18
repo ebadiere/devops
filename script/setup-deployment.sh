@@ -14,7 +14,7 @@ if [ -z "$KEYSTORE_PASSWORD" ]; then
 fi
 
 # Create keystore directory if it doesn't exist
-mkdir -p ~/.foundry/keystores
+mkdir -p $HOME/.foundry/keystores
 
 # Import the deployer key using cast
 echo "$KEYSTORE_PASSWORD" | cast wallet import deployer --private-key "$DEPLOYER_KEY"

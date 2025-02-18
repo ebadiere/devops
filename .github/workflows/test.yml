@@ -51,6 +51,9 @@ jobs:
         with:
           version: nightly
 
+      - name: Make setup script executable
+        run: chmod +x ./script/setup-deployment.sh
+
       - name: Setup deployment keystore
         run: ./script/setup-deployment.sh
         env:

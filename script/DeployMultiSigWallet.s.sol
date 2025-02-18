@@ -4,32 +4,49 @@ pragma solidity ^0.8.20;
 import { Script } from "forge-std/Script.sol";
 import { MultiSigWallet } from "../src/MultiSigWallet.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { DeploymentUtils } from "./DeploymentUtils.sol";
 
-contract DeployMultiSigWallet is Script {
+contract DeployMultiSigWallet is Script, DeploymentUtils {
     function run() external returns (address) {
+        // Load configuration
+        DeploymentConfig memory config = loadConfig();
+
+        // Deploy with configuration
+        return deploy(config);
+    }
+
+    function loadConfig() internal returns (DeploymentConfig memory) {
         // Get deployment private key from environment
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
 
-        // Configuration
-        address[] memory owners = new address[](3);
-        owners[0] = vm.addr(vm.envUint("OWNER1_KEY"));
-        owners[1] = vm.addr(vm.envUint("OWNER2_KEY"));
-        owners[2] = vm.addr(vm.envUint("OWNER3_KEY"));
-        uint256 required = 2;
+        // Get Gnosis Safe address from environment or use mock for testing
+        if (!isTestMode) {
+            gnosisSafe = vm.envAddress("GNOSIS_SAFE");
+            require(gnosisSafe != address(0), "Gnosis Safe address required");
+        }
 
-        vm.startBroadcast(deployerPrivateKey);
+        // Load owners from environment or use defaults for testing
+        address[] memory owners;
+        if (!isTestMode) {
+            owners = new address[](3);
+            owners[0] = vm.envAddress("OWNER1");
+            owners[1] = vm.envAddress("OWNER2");
+            owners[2] = vm.envAddress("OWNER3");
+            
+            // Validate owners
+            for (uint i = 0; i < owners.length; i++) {
+                require(owners[i] != address(0), "Invalid owner address");
+            }
+        } else {
+            // Use test addresses
+            owners = new address[](1);
+            owners[0] = address(1);
+        }
 
-        // Deploy implementation
-        MultiSigWallet implementation = new MultiSigWallet();
-
-        // Prepare initialization data
-        bytes memory initData = abi.encodeWithSelector(MultiSigWallet.initialize.selector, owners, required);
-
-        // Deploy proxy
-        ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), initData);
-
-        vm.stopBroadcast();
-
-        return address(proxy);
+        return DeploymentConfig({
+            gnosisSafe: gnosisSafe,
+            requiredConfirmations: isTestMode ? 1 : 2,
+            owners: owners
+        });
     }
 }

@@ -7,6 +7,7 @@ remappings = [
     "@openzeppelin/contracts=lib/openzeppelin-contracts/contracts",
     "@openzeppelin/contracts-upgradeable=lib/openzeppelin-contracts-upgradeable/contracts"
 ]
+fs_permissions = [{ access = "read-write", path = "./deployments"}]
 
 [profile.ci]
 via_ir = true
@@ -20,5 +21,13 @@ multiline_func_header = "all"
 quote_style = "double"
 number_underscore = "thousands"
 wrap_comments = true
+
+[rpc_endpoints]
+sepolia = "${SEPOLIA_RPC_URL}"
+goerli = "${GOERLI_RPC_URL}"
+
+[etherscan]
+sepolia = { key = "${ETHERSCAN_API_KEY}", url = "https://api-sepolia.etherscan.io/api" }
+goerli = { key = "${ETHERSCAN_API_KEY}", url = "https://api-goerli.etherscan.io/api" }
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

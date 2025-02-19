@@ -64,7 +64,14 @@ contract DeployMultiSigWallet is Script, DeploymentUtils {
         DeploymentConfig memory config = DeploymentConfig({
             gnosisSafe: gnosisSafe,
             requiredConfirmations: 2, // Always require 2 confirmations for security
-            owners: owners
+            owners: owners,
+            salt: keccak256(abi.encodePacked(
+                block.chainid,
+                block.timestamp,
+                gnosisSafe,
+                owners,
+                "MultiSigWallet_v1"
+            )) // More secure salt generation
         });
 
         // Step 5: Deploy the MultiSigWallet

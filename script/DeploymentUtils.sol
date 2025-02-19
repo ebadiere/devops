@@ -48,32 +48,29 @@ abstract contract DeploymentUtils is Script {
             revert(string.concat("Deployment not allowed on ", network));
         }
 
+        // Validate configuration
+        require(config.owners.length > 0, "No owners provided");
+        require(config.requiredConfirmations > 0 && config.requiredConfirmations <= config.owners.length, 
+                "Invalid required confirmations");
+
         // Start broadcast session for all transactions
         vm.startBroadcast();
 
         // Deploy implementation
         MultiSigWallet implementation = new MultiSigWallet();
         
-        // No need to initialize implementation - it will be initialized through the proxy
-
-        // Prepare initialization data for proxy
+        // Prepare initialization data
         bytes memory initData = abi.encodeWithSelector(
             MultiSigWallet.initialize.selector,
             config.owners,
             config.requiredConfirmations
         );
 
-        // Deploy and initialize proxy with create2
-        bytes memory proxyCode = abi.encodePacked(
-            type(ERC1967Proxy).creationCode,
-            abi.encode(implementation, initData)
+        // Deploy proxy
+        ERC1967Proxy proxy = new ERC1967Proxy(
+            address(implementation),
+            initData
         );
-        bytes32 salt = keccak256(abi.encodePacked("proxy", VERSION, SALT));
-        address payable proxy;
-        assembly {
-            proxy := create2(0, add(proxyCode, 0x20), mload(proxyCode), salt)
-        }
-        require(proxy != address(0), "Proxy deployment failed");
 
         // End broadcast session
         vm.stopBroadcast();
@@ -84,8 +81,20 @@ abstract contract DeploymentUtils is Script {
         console2.log("Proxy:", address(proxy));
         console2.log("Version:", VERSION);
 
-        // Only write deployment file in non-test mode
-        if (!isTestMode) {
+        // Handle verification
+        if (isTestMode) {
+            // For local deployment, just show the addresses
+            console2.log("\nDeployment Addresses:");
+            console2.log("Implementation:", address(implementation));
+            console2.log("Proxy:", address(proxy));
+            console2.log("\nTo interact with the wallet, use the proxy address:", address(proxy));
+            
+            // Show init data for reference
+            console2.log("\nProxy initialization data (for reference):");
+            console2.log("Implementation:", address(implementation));
+            console2.log("Init data:", vm.toString(initData));
+        } else {
+            // Write deployment file
             string memory deploymentPath = string.concat(
                 "deployments/",
                 network,
@@ -95,12 +104,40 @@ abstract contract DeploymentUtils is Script {
             string memory jsonString = string.concat(
                 '{"implementation":"',
                 vm.toString(address(implementation)),
+                '","proxy":"',
+                vm.toString(address(proxy)),
                 '"}'
             );
             
             vm.writeFile(deploymentPath, jsonString);
+
+            // Verify on Etherscan for mainnet/testnet
+            if (bytes(vm.envString("ETHERSCAN_API_KEY")).length > 0) {
+                string[] memory verifyImplementationCmd = new string[](7);
+                verifyImplementationCmd[0] = "forge";
+                verifyImplementationCmd[1] = "verify-contract";
+                verifyImplementationCmd[2] = vm.toString(address(implementation));
+                verifyImplementationCmd[3] = "MultiSigWallet";
+                verifyImplementationCmd[4] = "--chain";
+                verifyImplementationCmd[5] = network;
+                verifyImplementationCmd[6] = "--watch";
+                vm.ffi(verifyImplementationCmd);
+
+                // Verify proxy contract
+                string[] memory verifyProxyCmd = new string[](7);
+                verifyProxyCmd[0] = "forge";
+                verifyProxyCmd[1] = "verify-contract";
+                verifyProxyCmd[2] = vm.toString(address(proxy));
+                verifyProxyCmd[3] = "ERC1967Proxy";
+                verifyProxyCmd[4] = "--chain";
+                verifyProxyCmd[5] = network;
+                verifyProxyCmd[6] = "--watch";
+                vm.ffi(verifyProxyCmd);
+            } else {
+                console2.log("Skipping verification - ETHERSCAN_API_KEY not set");
+            }
         }
 
-        return proxy;
+        return address(proxy);
     }
 }

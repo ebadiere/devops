@@ -8,47 +8,35 @@ import { DeploymentUtils } from "./DeploymentUtils.sol";
 import { MockGnosisSafe } from "../test/mocks/MockGnosisSafe.sol";
 
 contract DeployMultiSigWallet is Script, DeploymentUtils {
-    function run() external returns (address) {
-        // Load configuration
-        DeploymentConfig memory config = loadConfig();
+    function run() public returns (address) {
+        // Load environment variables
+        address owner1 = isTestMode ? vm.addr(1) : vm.envAddress("OWNER1");
+        address owner2 = isTestMode ? vm.addr(2) : vm.envAddress("OWNER2");
+        address owner3 = isTestMode ? vm.addr(3) : vm.envAddress("OWNER3");
 
-        // Deploy with configuration
-        return deploy(config);
-    }
+        // Create owners array
+        address[] memory owners = new address[](3);
+        owners[0] = owner1;
+        owners[1] = owner2;
+        owners[2] = owner3;
 
-    function loadConfig() internal returns (DeploymentConfig memory) {
-        // Get Gnosis Safe address from environment or deploy mock for testing
-        if (!isTestMode) {
+        // Deploy mock Gnosis Safe for test mode
+        if (isTestMode) {
+            vm.startBroadcast();
+            gnosisSafe = address(new MockGnosisSafe());
+            vm.stopBroadcast();
+        } else {
             gnosisSafe = vm.envAddress("GNOSIS_SAFE");
-            require(gnosisSafe != address(0), "Gnosis Safe address required");
-        } else {
-            // Deploy mock Gnosis Safe for testing
-            MockGnosisSafe mockSafe = new MockGnosisSafe();
-            gnosisSafe = address(mockSafe);
         }
 
-        // Load owners from environment or use defaults for testing
-        address[] memory owners;
-        if (!isTestMode) {
-            owners = new address[](3);
-            owners[0] = vm.envAddress("OWNER1");
-            owners[1] = vm.envAddress("OWNER2");
-            owners[2] = vm.envAddress("OWNER3");
-            
-            // Validate owners
-            for (uint i = 0; i < owners.length; i++) {
-                require(owners[i] != address(0), "Invalid owner address");
-            }
-        } else {
-            // Use test addresses
-            owners = new address[](1);
-            owners[0] = address(1);
-        }
-
-        return DeploymentConfig({
+        // Configure deployment
+        DeploymentConfig memory config = DeploymentConfig({
             gnosisSafe: gnosisSafe,
-            requiredConfirmations: isTestMode ? 1 : 2,
+            requiredConfirmations: 2, // Always require 2 confirmations for better security
             owners: owners
         });
+
+        // Deploy wallet
+        return deploy(config);
     }
 }

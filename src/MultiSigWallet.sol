@@ -51,6 +51,9 @@ contract MultiSigWallet is
         require(_owners.length > 0, "Owners required");
         require(_required > 0 && _required <= _owners.length, "Invalid required number of owners");
 
+        // Set up roles
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        
         for (uint256 i = 0; i < _owners.length; i++) {
             require(_owners[i] != address(0), "Invalid owner");
             _grantRole(DEFAULT_ADMIN_ROLE, _owners[i]);
